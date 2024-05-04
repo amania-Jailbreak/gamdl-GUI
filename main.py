@@ -122,7 +122,7 @@ class button(customtkinter.CTkFrame):
         self.lyrics.grid(row=0, column=4, padx=10, pady=10,sticky='n')
         
     def download(self):
-        option = f'-l "{self.master.setting.option.lang.get()}" -o "{self.master.setting.textbox.output_url_box.get("0.0","end-1c")}" --codec-song "{self.master.setting.option.codic.get()}" --download-mode "{self.master.setting.option.download_mode.get()}" --remux-mode mp4box --wvd-path device.wvd --nm3u8dlre-path ./binary/N_m3u8dl-RE.exe --mp4decrypt-path ./binary/mp4decrypt.exe --mp4box-path ./binary/mp4box.exe'
+        option = f'-l "{self.master.setting.option.lang.get()}" -o "{self.master.setting.textbox.output_url_box.get("0.0","end-1c")}" --codec-song "{self.master.setting.option.codic.get()}" --download-mode "{self.master.setting.option.download_mode.get()}" --remux-mode ffmpeg --wvd-path device.wvd --nm3u8dlre-path ./binary/N_m3u8dl-RE.exe --mp4decrypt-path ./binary/mp4decrypt.exe --ffmpeg-path ./binary/ffmpeg.exe'
         if self.checkbox.get() == 1:
             option = f'{option} --overwrite'
         if self.lyrics.get() == 1:
