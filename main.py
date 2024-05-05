@@ -1,31 +1,56 @@
 import customtkinter,pyperclip
 from customtkinter import filedialog
-import webbrowser,ctypes,os,sys,json,threading
-
+import webbrowser,ctypes,os,sys,json,threading,re
+import time
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+import requests
 # N_m3u8dl-RE及びmp4decryptコマンドが使えるかの確認
 import subprocess
 
-try:
-    subprocess.run([".\\binary\\N_m3u8dl-RE"], check=True)
-    print("N_m3u8dl-REコマンドが使えます")
-except:
-    MessageBox = ctypes.windll.user32.MessageBoxW
-    MessageBox(None, 'Please Install N_m3u8dl-RE', 'Error', 0)
-    sys.exit()
+def isCheckURL(url):
+    try:
+        response = requests.head(url, timeout=10)
+        if response.status_code == 200:
+            return True
+        elif response.status_code == 405:  # Method Not Allowed
+            allowed_methods = response.headers.get('Allow', '')
+            if 'GET' in allowed_methods:
+                response = requests.get(url, timeout=10)
+                if response.status_code == 200:
+                    return True
+                else:
+                    print(f"URL is not valid. HTTP status code: {response.status_code}")
+                    return False
+            else:
+                print(f"URL is not valid. Neither HEAD nor GET requests are allowed.")
+                return False
+        else:
+            print(f"URL is not valid. HTTP status code: {response.status_code}")
+            return False
 
-try:
-    subprocess.run([".\\binary\\mp4decrypt"])
-    print("mp4decryptコマンドが使えます")
-except FileNotFoundError:
-    MessageBox = ctypes.windll.user32.MessageBoxW
-    MessageBox(None, 'Please Install mp4decrypt', 'Error', 0)
-    sys.exit()
+    except requests.exceptions.RequestException as e:
+        print(f"URL is not valid. Error: {e}")
+        return False
+
+        
+        
 
 
-if not os.path.exists("./device.wvd"):
-    MessageBox = ctypes.windll.user32.MessageBoxW
-    MessageBox(None, 'Please check for the existence of device.wvd', 'Error', 0)
-    sys.exit()
+def resource_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
+if not os.path.exists(os.path.join(os.path.abspath("."),'config.json')):
+    with open(os.path.join(os.path.abspath("."),'config.json'), 'w') as f:
+        f.write('''
+{
+    "lang": "ja-JP",
+    "download_mode": "nm3u8dlre",
+    "codic": "aac-legacy",
+    "output_url": "./AppleMusic"
+}
+''')
     
 if not os.path.exists("./cookies.txt"):
     MessageBox = ctypes.windll.user32.MessageBoxW
@@ -47,8 +72,80 @@ class TextBox(customtkinter.CTkFrame):
         self.download_url_box = customtkinter.CTkTextbox(self,height=10)
         self.download_url_box.grid(row=2,column=0,padx=10, pady=10,sticky='ew')
         
-        self.paste_button = customtkinter.CTkButton(self, text="Paste", command=self.paste)
-        self.paste_button.grid(row=3, column=0, padx=10, pady=10, sticky="ew")
+        class dl_buttons(customtkinter.CTkFrame):
+            def __init__(self, master, **kwargs):
+                super().__init__(master, **kwargs)
+        
+                self.paste_button = customtkinter.CTkButton(self, text="Paste", command=self.paste,width=280)
+                self.paste_button.grid(row=0, column=0, padx=10, pady=10, sticky="ew")
+        
+                self.get_all_music_links_button = customtkinter.CTkButton(self, text="Get all music by artist", command=self.get_all_music_links,width=280)
+                self.get_all_music_links_button.grid(row=0, column=1, padx=10, pady=10, sticky="ew")
+
+            def get_all_music_links(self):
+                url = self.master.download_url_box.get("0.0","end-1c")
+                self.master.download_url_box.delete('0.0','end-1c')
+                if "," in url:
+                    url = url.split(',')
+                elif ' ' in url:
+                    url = url.split(' ')
+                elif '\r\n' in url:
+                    url = url.split('\r\n')
+                elif '\n' in url:
+                    url = url.split('\n')
+                elif '.txt' in url:
+                    with open(url, encoding='utf-8') as f:
+                        url = f.readlines()
+                        url = [i.replace('\n','') for i in url]
+                else:
+                    url = [url]
+                self.url = url
+                links = ""
+                self.tmp_progress = 0
+                self.all_tmp_progress = len(self.url) - 1
+                self.master.master.master.log.music_progressbar.set(0)
+                self.get_all_music_links_button.configure(state='disabled')
+                self.get_all_music_links_button.configure(text='Getting...')
+                self.master.download_url_box.configure(state='disabled')
+                def get_all_music_links():
+                    url = self.url
+                    for url in self.url:
+                        if not isCheckURL(url):
+                            continue
+                        if not 'artist' in url:
+                            continue
+                        driver = webdriver.Chrome()
+                        driver.get(url.replace('/see-all?section=top-songs','') + "/see-all?section=top-songs")
+                        while True:
+                            last_height = driver.execute_script("return document.getElementById('scrollable-page').scrollHeight")
+                            driver.execute_script("document.getElementById('scrollable-page').scrollTo(0, document.getElementById('scrollable-page').scrollHeight)")
+                            time.sleep(2)
+                            new_height = driver.execute_script("return document.getElementById('scrollable-page').scrollHeight")
+                            if new_height == last_height:
+                                break
+                        elements = driver.find_elements(by=By.XPATH, value="//a[contains(@data-testid, 'track-seo-link')]")
+                        links = ""
+                        for element in elements:
+                            url = element.get_attribute("href")
+                            if 'song' not in url:
+                                continue
+                            links += url + "\n"
+                        driver.quit()
+                        self.master.download_url_box.configure(state='normal')
+                        self.master.download_url_box.insert('end',text=links)
+                        self.master.download_url_box.configure(state='disabled')
+                        self.tmp_progress += 1
+                        self.master.master.master.log.music_progressbar.set(self.tmp_progress/self.all_tmp_progress)
+                    self.get_all_music_links_button.configure(state='normal')
+                    self.get_all_music_links_button.configure(text='Get all music by artist')
+                th1 = threading.Thread(target=get_all_music_links)
+                th1.start()
+            def paste(self):
+                self.master.download_url_box.delete('0.0','end-1c')
+                self.master.download_url_box.insert('0.0',text=pyperclip.paste())
+        
+        self.dl_buttons = dl_buttons(self)
+        self.dl_buttons.grid(row=3, column=0, padx=10, pady=10, sticky='ew')
         
         self.output_text = customtkinter.CTkLabel(self,text='output directory')
         self.output_text.grid(row=4,column=0,padx=10, pady=10,sticky='ew') 
@@ -59,10 +156,6 @@ class TextBox(customtkinter.CTkFrame):
         
         self.open_dir_button = customtkinter.CTkButton(self, text="Open Directory", command=self.open_directory)
         self.open_dir_button.grid(row=6, column=0, padx=10, pady=10, sticky="ew")
-        
-    def paste(self):
-        self.download_url_box.delete('0.0','end-1c')
-        self.download_url_box.insert('0.0',text=pyperclip.paste())
         
     def open_directory(self):
         self.output_url_box.delete('0.0','end-1c')
@@ -89,7 +182,7 @@ class Option(customtkinter.CTkFrame):
         self.codic_text = customtkinter.CTkLabel(self,text='Codec')
         self.codic_text.grid(row=5,column=0,padx=10,pady=10,sticky='ew')
         
-        self.codic = customtkinter.CTkSegmentedButton(self, values=["aac", "aac-legacy","aac-he-legacy",'aac-he','aac-binaural','aac-he-downmix','atmos','ac3','alac','ask'],width=100)
+        self.codic = customtkinter.CTkSegmentedButton(self, values=["aac", "aac-legacy","aac-he-legacy",'aac-he','aac-binaural','aac-he-downmix','atmos','ac3','alac'],width=100)
         self.codic.set(config['codic'])
         self.codic.grid(row=6,column=0,padx=10,pady=10,sticky='ew')
 
@@ -122,33 +215,72 @@ class button(customtkinter.CTkFrame):
         self.lyrics.grid(row=0, column=4, padx=10, pady=10,sticky='n')
         
     def download(self):
-        option = f'-l "{self.master.setting.option.lang.get()}" -o "{self.master.setting.textbox.output_url_box.get("0.0","end-1c")}" --codec-song "{self.master.setting.option.codic.get()}" --download-mode "{self.master.setting.option.download_mode.get()}" --remux-mode ffmpeg --wvd-path device.wvd --nm3u8dlre-path ./binary/N_m3u8dl-RE.exe --mp4decrypt-path ./binary/mp4decrypt.exe --ffmpeg-path ./binary/ffmpeg.exe'
+        url = self.master.setting.textbox.download_url_box.get("0.0","end-1c")
+        if url == "":
+            MessageBox = ctypes.windll.user32.MessageBoxW
+            MessageBox(None, 'Please input URL', 'Error', 0)
+            return
+        if "," in url:
+            url = url.split(',')
+        elif ' ' in url:
+            url = url.split(' ')
+        elif '\r\n' in url:
+            url = url.split('\r\n')
+        elif '\n' in url:
+            url = url.split('\n')
+        elif '.txt' in url:
+            with open(url, encoding='utf-8') as f:
+                url = f.readlines()
+                url = [i.replace('\n','') for i in url]
+        else:
+            url = [url]
+        print(url)
+        option = f'-l "{self.master.setting.option.lang.get()}" -o "{self.master.setting.textbox.output_url_box.get("0.0","end-1c")}" --codec-song "{self.master.setting.option.codic.get()}" --download-mode "{self.master.setting.option.download_mode.get()}" --remux-mode ffmpeg --wvd-path {resource_path("device.wvd")} --nm3u8dlre-path {resource_path("binary\\N_m3u8dl-RE.exe")} --mp4decrypt-path {resource_path("binary\\mp4decrypt.exe")} --ffmpeg-path {resource_path("binary\\ffmpeg.exe")}'
         if self.checkbox.get() == 1:
             option = f'{option} --overwrite'
         if self.lyrics.get() == 1:
             option = f'{option} --no-synced-lyrics'
-        self.command = f'gamdl {option} "{self.master.setting.textbox.download_url_box.get("0.0","end-1c")}"'
+        self.command = []
+        for i in url:
+            self.command.append(f'gamdl {option} "{i}"')
         def process():
             self.button.configure(state="disabled")
             self.cancel.configure(state="normal")
-            self.p = subprocess.Popen(self.command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
-            for line in self.p.stdout:
-                self.master.log.log.configure(state="normal")
-                self.master.log.log.insert('end', line)
-                self.master.log.log.see("end")
-                self.master.log.log.configure(state="disabled")
-            try:
-                outs, errs = self.p.communicate()
-            except subprocess.TimeoutExpired:
-                pass
-            else:
-                self.p.terminate()
+            self.cance = False
+            self.tmp_progress = 0
+            self.all_tmp_progress = len(self.command)
+            for i in self.command:
+                if self.cance:
+                    break
+                self.p = subprocess.Popen(i, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True,encoding='utf-8')
+                for line in self.p.stdout:
+                    self.master.log.log.configure(state="normal")
+                    if "Track" in line and "Downloading" in line:
+                        track_info = re.search(r'\(Track (\d+)/(\d+) from URL (\d+)/(\d+)\)', line)
+                        if track_info:
+                            current_track = int(track_info.group(1))
+                            total_tracks = int(track_info.group(2))
+                            progress = current_track / total_tracks
+                            self.master.log.playlist_progressbar.set(progress)
+                    self.master.log.log.insert('end', line)
+                    self.master.log.log.see("end")
+                    self.master.log.log.configure(state="disabled")
+                try:
+                    outs, errs = self.p.communicate()
+                except subprocess.TimeoutExpired:
+                    pass
+                else:
+                    self.p.terminate()
+                self.tmp_progress += 1
+                self.master.log.music_progressbar.set(self.tmp_progress/self.all_tmp_progress)
             self.button.configure(state="normal")
             self.cancel.configure(state="disabled")
+            self.cance = False
 
         th1 = threading.Thread(target=process)
         th1.start()
     def cancel(self):
+        self.cance = True
         self.p.kill()
         self.button.configure(state="normal")
         self.cancel.configure(state="disabled")
@@ -161,12 +293,19 @@ class log(customtkinter.CTkFrame):
         self.log = customtkinter.CTkTextbox(self,height=100,width=1270)
         self.log.grid(row=0, column=0, padx=10, pady=10,sticky='ew')
         self.log.configure(state="disabled")
+        self.playlist_progressbar = customtkinter.CTkProgressBar(self, orientation="horizontal")
+        self.playlist_progressbar.grid(row=1, column=0, padx=10, pady=10,sticky='ew')
+        self.playlist_progressbar.set(0)
+        self.music_progressbar = customtkinter.CTkProgressBar(self, orientation="horizontal")
+        self.music_progressbar.grid(row=2, column=0, padx=10, pady=10,sticky='ew')
+        self.music_progressbar.set(0)
+        
 class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
 
         self.title("gamdl GUI")
-        self.geometry("1310x550")
+        self.geometry("1310x630")
         self.resizable(0, 0)
         meiryo = customtkinter.CTkFont(family="Meiryo UI", size=20)
         
