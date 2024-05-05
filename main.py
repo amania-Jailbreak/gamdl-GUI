@@ -114,7 +114,9 @@ class TextBox(customtkinter.CTkFrame):
                             continue
                         if not 'artist' in url:
                             continue
-                        driver = webdriver.Chrome()
+                        options = webdriver.ChromeOptions()
+                        options.add_argument('--headless')
+                        driver = webdriver.Chrome(options=options)
                         driver.get(url.replace('/see-all?section=top-songs','') + "/see-all?section=top-songs")
                         while True:
                             last_height = driver.execute_script("return document.getElementById('scrollable-page').scrollHeight")
