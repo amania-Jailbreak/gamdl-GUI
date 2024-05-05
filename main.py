@@ -253,7 +253,7 @@ class button(customtkinter.CTkFrame):
             for i in self.command:
                 if self.cance:
                     break
-                self.p = subprocess.Popen(i, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True)
+                self.p = subprocess.Popen(i, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True,creationflags=subprocess.CREATE_NO_WINDOW)
                 for line in self.p.stdout:
                     self.master.log.log.configure(state="normal")
                     if "Track" in line and "Downloading" in line:
