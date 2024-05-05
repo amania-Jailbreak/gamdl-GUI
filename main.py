@@ -138,6 +138,7 @@ class TextBox(customtkinter.CTkFrame):
                         self.master.master.master.log.music_progressbar.set(self.tmp_progress/self.all_tmp_progress)
                     self.get_all_music_links_button.configure(state='normal')
                     self.get_all_music_links_button.configure(text='Get all music by artist')
+                    self.master.download_url_box.configure(state='normal')
                 th1 = threading.Thread(target=get_all_music_links)
                 th1.start()
             def paste(self):
