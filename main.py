@@ -5,7 +5,6 @@ import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 import requests
-# N_m3u8dl-RE及びmp4decryptコマンドが使えるかの確認
 import subprocess
 
 def isCheckURL(url):
