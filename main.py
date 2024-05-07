@@ -5,9 +5,10 @@ import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 import requests
-# N_m3u8dl-RE及びmp4decryptコマンドが使えるかの確認
 import subprocess
-
+from gamdl.cli import main as gamdl
+from gamdl.enums import *
+from pathlib import Path
 def isCheckURL(url):
     try:
         response = requests.head(url, timeout=10)
@@ -204,10 +205,6 @@ class button(customtkinter.CTkFrame):
         super().__init__(master, **kwargs)
         self.button = customtkinter.CTkButton(self, text="Download", command=self.download)
         self.button.grid(row=0, column=2, padx=10, pady=10,sticky='n')
-        
-        self.cancel = customtkinter.CTkButton(self, text="Cancel", command=self.cancel)
-        self.cancel.grid(row=0, column=1, padx=10, pady=10,sticky='n')
-        self.cancel.configure(state='disabled')
         self.buttons = customtkinter.CTkButton(self, text="How to Setup", command=self.setup)
         self.buttons.grid(row=0, column=0, padx=10, pady=10,sticky='n')
         
@@ -216,7 +213,19 @@ class button(customtkinter.CTkFrame):
         
         self.lyrics = customtkinter.CTkCheckBox(self, text="no Lyrics")
         self.lyrics.grid(row=0, column=4, padx=10, pady=10,sticky='n')
-        
+    def logger(self,mode='normal',message=None):
+        self.master.log.log.configure(state="normal")
+        if mode == 'normal':
+            mode = '[INFO]'
+        if mode == 'warning':
+            mode = '[WARNING]'
+        if mode == 'error':
+            mode = '[CRITICAL]'
+        if mode == 'debug':
+            mode = '[DEBUG]'
+        self.master.log.log.insert('end', f'{mode} {message}\n')
+        self.master.log.log.see("end")
+        self.master.log.log.configure(state="disabled")
     def download(self):
         url = self.master.setting.textbox.download_url_box.get("0.0","end-1c")
         if url == "":
@@ -237,56 +246,39 @@ class button(customtkinter.CTkFrame):
                 url = [i.replace('\n','') for i in url]
         else:
             url = [url]
-        print(url)
-        option = f'-l "{self.master.setting.option.lang.get()}" -o "{self.master.setting.textbox.output_url_box.get("0.0","end-1c")}" --codec-song "{self.master.setting.option.codic.get()}" --download-mode "{self.master.setting.option.download_mode.get()}" --remux-mode ffmpeg --wvd-path {resource_path("device.wvd")} --nm3u8dlre-path {resource_path("binary\\N_m3u8dl-RE.exe")} --mp4decrypt-path {resource_path("binary\\mp4decrypt.exe")} --ffmpeg-path {resource_path("binary\\ffmpeg.exe")}'
+        self.url = url
+        self.args = {}
+        self.args["lang"] = self.master.setting.option.lang.get()
+        self.args["output"] = Path(self.master.setting.textbox.output_url_box.get("0.0","end-1c"))
+        codec = self.master.setting.option.codic.get()
+        if codec == 'AAC':
+            self.args["codec"] = SongCodec.AAC
+        elif codec == 'AAC-LEGACY':
+            self.args['codec'] = SongCodec.AAC_LEGACY
+        elif codec == 'Dolby Atmos':
+            self.args['codec'] = SongCodec.ATMOS
+        elif codec == 'ALAC':
+            self.args['codec'] = SongCodec.ALAC
+        else:
+            self.logger(mode='warning',message='Use aac-legacy due to unavailability of codecs')
+            self.args['codec'] = SongCodec.AAC_LEGACY
+            
+        if self.master.setting.option.download_mode.get() == 'nm3u8dlre':
+            self.args['download-mode'] = DownloadMode.NM3U8DLRE
+        else:
+            self.args['download-mode'] = DownloadMode.YTDLP
+
         if self.checkbox.get() == 1:
-            option = f'{option} --overwrite'
+            self.args['overwrite'] = True
         if self.lyrics.get() == 1:
-            option = f'{option} --no-synced-lyrics'
-        self.command = []
-        for i in url:
-            self.command.append(f'gamdl {option} "{i}"')
+            self.args['lytics'] = True
         def process():
             self.button.configure(state="disabled")
-            self.cancel.configure(state="normal")
-            self.cance = False
-            self.tmp_progress = 0
-            self.all_tmp_progress = len(self.command)
-            for i in self.command:
-                if self.cance:
-                    break
-                self.p = subprocess.Popen(i, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,universal_newlines=True,creationflags=subprocess.CREATE_NO_WINDOW)
-                for line in self.p.stdout:
-                    self.master.log.log.configure(state="normal")
-                    if "Track" in line and "Downloading" in line:
-                        track_info = re.search(r'\(Track (\d+)/(\d+) from URL (\d+)/(\d+)\)', line)
-                        if track_info:
-                            current_track = int(track_info.group(1))
-                            total_tracks = int(track_info.group(2))
-                            progress = current_track / total_tracks
-                            self.master.log.playlist_progressbar.set(progress)
-                    self.master.log.log.insert('end', line)
-                    self.master.log.log.see("end")
-                    self.master.log.log.configure(state="disabled")
-                try:
-                    outs, errs = self.p.communicate()
-                except subprocess.TimeoutExpired:
-                    pass
-                else:
-                    self.p.terminate()
-                self.tmp_progress += 1
-                self.master.log.music_progressbar.set(self.tmp_progress/self.all_tmp_progress)
+            gamdl(urls=self.url,language=self.args['lang'], output_path=self.args['output'], codec_song=self.args['codec'], download_mode=self.args['download-mode'], overwrite=self.args.get('overwrite', False), no_synced_lyrics=self.args.get('lytics', False),nm3u8dlre_path=resource_path("binary\\N_m3u8dl-RE.exe"),mp4decrypt_path=resource_path("binary\\mp4decrypt.exe"),ffmpeg_path=resource_path("binary\\ffmpeg.exe"),window=self)
             self.button.configure(state="normal")
-            self.cancel.configure(state="disabled")
-            self.cance = False
-
         th1 = threading.Thread(target=process)
         th1.start()
-    def cancel(self):
-        self.cance = True
-        self.p.kill()
-        self.button.configure(state="normal")
-        self.cancel.configure(state="disabled")
+        
     def setup(self):
         webbrowser.open('https://github.com/amania-Jailbreak/gamdl-GUI/blob/main/how%20to%20setup.md')
 
