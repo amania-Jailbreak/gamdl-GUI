@@ -103,7 +103,7 @@ class TextBox(customtkinter.CTkFrame):
                 self.url = url
                 links = ""
                 self.tmp_progress = 0
-                self.all_tmp_progress = len(self.url) - 1
+                self.all_tmp_progress = len(self.url)
                 self.master.master.master.log.music_progressbar.set(0)
                 self.get_all_music_links_button.configure(state='disabled')
                 self.get_all_music_links_button.configure(text='Getting...')
@@ -186,7 +186,7 @@ class Option(customtkinter.CTkFrame):
         self.codic_text = customtkinter.CTkLabel(self,text='Codec')
         self.codic_text.grid(row=5,column=0,padx=10,pady=10,sticky='ew')
         
-        self.codic = customtkinter.CTkSegmentedButton(self, values=["aac", "aac-legacy","aac-he-legacy",'aac-he','aac-binaural','aac-he-downmix','atmos','ac3','alac'],width=100)
+        self.codic = customtkinter.CTkSegmentedButton(self, values=['Dolby Atmos','ALAC','AAC','AAC-LEGACY'],width=100)
         self.codic.set(config['codic'])
         self.codic.grid(row=6,column=0,padx=10,pady=10,sticky='ew')
 
@@ -219,13 +219,25 @@ class button(customtkinter.CTkFrame):
             mode = '[INFO]'
         if mode == 'warning':
             mode = '[WARNING]'
+            return
         if mode == 'error':
             mode = '[CRITICAL]'
         if mode == 'debug':
             mode = '[DEBUG]'
+            return
         self.master.log.log.insert('end', f'{mode} {message}\n')
         self.master.log.log.see("end")
         self.master.log.log.configure(state="disabled")
+    def progless(self,type,value):
+        if type == 'playlist':
+            self.master.log.playlist_progressbar.set(value)
+        elif type == 'music':
+            self.master.log.music_progressbar.set(value)
+        elif type == 'all':
+            self.master.log.music_progressbar.set(value)
+            self.master.log.playlist_progressbar.set(value)
+            
+        
     def download(self):
         url = self.master.setting.textbox.download_url_box.get("0.0","end-1c")
         if url == "":
@@ -285,7 +297,7 @@ class button(customtkinter.CTkFrame):
 class log(customtkinter.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
-        self.log = customtkinter.CTkTextbox(self,height=100,width=1270)
+        self.log = customtkinter.CTkTextbox(self,height=100,width=920)
         self.log.grid(row=0, column=0, padx=10, pady=10,sticky='ew')
         self.log.configure(state="disabled")
         self.playlist_progressbar = customtkinter.CTkProgressBar(self, orientation="horizontal")
@@ -300,7 +312,7 @@ class App(customtkinter.CTk):
         super().__init__()
 
         self.title("gamdl GUI")
-        self.geometry("1310x630")
+        self.geometry("960x630")
         self.resizable(0, 0)
         meiryo = customtkinter.CTkFont(family="Meiryo UI", size=20)
         

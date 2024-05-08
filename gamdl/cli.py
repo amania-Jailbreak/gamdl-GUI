@@ -105,6 +105,7 @@ def main(
     window = None,
 ):
     window.logger("debug","Starting downloader")
+    window.progless('all',0)
     if not cookies_path.exists():
         window.logger("error",X_NOT_FOUND_STRING.format("Cookies file", cookies_path))
         return
@@ -217,8 +218,7 @@ def main(
         except Exception as e:
             error_count += 1
             window.logger("error",
-                f'({url_progress}) Failed to check "{url}"',
-                exc_info=print_exceptions,
+                f'({url_progress}) Failed to check "{url}"'
             )
             continue
         for queue_index, queue_item in enumerate(download_queue, start=1):
@@ -229,7 +229,7 @@ def main(
                     f'({queue_progress}) Downloading "{track["attributes"]["name"]}"'
                 )
                 if not track["attributes"].get("playParams"):
-                    window.logger('warning',
+                    window.logger('normal',
                         f"({queue_progress}) Track is not streamable, skipping"
                     )
                     continue
@@ -242,7 +242,7 @@ def main(
                         and not disable_music_video_skip
                     )
                 ):
-                    window.logger('warning',
+                    window.logger('normal',
                         f"({queue_progress}) Track is not downloadable with current configuration, skipping"
                     )
                 elif track["type"] == "songs":
@@ -276,7 +276,7 @@ def main(
                         else:
                             stream_info = downloader_song.get_stream_info(track)
                             if not stream_info.stream_url or not stream_info.pssh:
-                                window.logger('warning',
+                                window.logger('normal',
                                     f"({queue_progress}) Song is not downloadable or is not"
                                     " available in the chosen codec, skipping"
                                 )
@@ -357,7 +357,7 @@ def main(
                     cover_path = downloader_music_video.get_cover_path(final_path)
                     cover_url = downloader.get_cover_url(track)
                     if final_path.exists() and not overwrite:
-                        window.logger('warning',
+                        window.logger('normal',
                             f'({queue_progress}) Music video already exists at "{final_path}", skipping'
                         )
                     else:
@@ -426,7 +426,7 @@ def main(
                     if not save_cover:
                         pass
                     elif cover_path.exists() and not overwrite:
-                        window.logger('warning',
+                        window.logger('normal',
                             f'Cover already exists at "{cover_path}", skipping'
                         )
                     else:
@@ -440,7 +440,7 @@ def main(
                     cover_path = downloader_music_video.get_cover_path(final_path)
                     cover_url = downloader.get_cover_url(track)
                     if final_path.exists() and not overwrite:
-                        window.logger('warning',
+                        window.logger('normal',
                             f'({queue_progress}) Post video already exists at "{final_path}", skipping'
                         )
                     else:
@@ -453,12 +453,13 @@ def main(
                     if not save_cover:
                         pass
                     elif cover_path.exists() and not overwrite:
-                        window.logger('warning',
+                        window.logger('normal',
                             f'Cover already exists at "{cover_path}", skipping'
                         )
                     else:
                         window.logger("debug",f'Saving cover to "{cover_path}"')
                         downloader.save_cover(cover_path, cover_url)
+            
             except Exception as e:
                 error_count += 1
                 window.logger('warning',
@@ -469,4 +470,6 @@ def main(
                 if temp_path.exists():
                     window.logger('normal',f'Cleaning up "{temp_path}"')
                     downloader.cleanup_temp_path()
+                    window.progless('music',url_index/len(urls))
+                    window.progless('playlist',queue_index/len(download_queue))
     window.logger('normal',f"Done ({error_count} error(s))")
