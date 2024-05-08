@@ -1,7 +1,7 @@
 {
     "lang": "ja-JP",
     "download_mode": "nm3u8dlre",
-    "codic": "aac-legacy",
+    "codic": "AAC-LEGACY",
     "output_url": "./AppleMusic"
 }
 

@@ -276,9 +276,11 @@ def main(
                         else:
                             stream_info = downloader_song.get_stream_info(track)
                             if not stream_info.stream_url or not stream_info.pssh:
+                                if not SongCodec.AAC_LEGACY == codec_song:
+                                    main(urls=[url],language=language, output_path=output_path, codec_song=SongCodec.AAC_LEGACY, download_mode=download_mode, overwrite=overwrite, no_synced_lyrics=no_synced_lyrics,nm3u8dlre_path=nm3u8dlre_path,mp4decrypt_path=mp4box_path,ffmpeg_path=ffmpeg_path,window=window)
                                 window.logger('normal',
                                     f"({queue_progress}) Song is not downloadable or is not"
-                                    " available in the chosen codec, skipping"
+                                    " available in the chosen codec,"
                                 )
                                 continue
                             window.logger('warning',"Getting decryption key")
