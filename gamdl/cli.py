@@ -464,12 +464,12 @@ def main(
             
             except Exception as e:
                 error_count += 1
-                window.logger('warning',
+                window.logger('error',
                     f'({queue_progress}) Failed to download "{track["attributes"]["name"]}"',
                 )
             finally:
                 if temp_path.exists():
-                    window.logger('normal',f'Cleaning up "{temp_path}"')
+                    window.logger('debug',f'Cleaning up "{temp_path}"')
                     downloader.cleanup_temp_path()
                     window.progless('music',url_index/len(urls))
                     window.progless('playlist',queue_index/len(download_queue))
