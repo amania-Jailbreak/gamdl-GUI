@@ -215,6 +215,7 @@ class DownloaderMusicVideo:
                 decrypted_path,
             ],
             check=True,
+            creationflags=subprocess.CREATE_NO_WINDOW,
             **self.downloader.subprocess_additional_args,
         )
 
@@ -239,6 +240,7 @@ class DownloaderMusicVideo:
                 fixed_path,
             ],
             check=True,
+            creationflags=subprocess.CREATE_NO_WINDOW,
             **self.downloader.subprocess_additional_args,
         )
 
@@ -274,6 +276,7 @@ class DownloaderMusicVideo:
                 fixed_path,
             ],
             check=True,
+            creationflags=subprocess.CREATE_NO_WINDOW,
             **self.downloader.subprocess_additional_args,
         )
 

@@ -50,7 +50,7 @@ class Downloader:
         exclude_tags: str = None,
         cover_size: int = 1200,
         truncate: int = 40,
-        silent: bool = False,
+        silent: bool = True,
     ):
         self.apple_music_api = apple_music_api
         self.itunes_api = itunes_api
@@ -309,6 +309,7 @@ class Downloader:
                 path.parent,
             ],
             check=True,
+            creationflags=subprocess.CREATE_NO_WINDOW,
             **self.subprocess_additional_args,
         )
 

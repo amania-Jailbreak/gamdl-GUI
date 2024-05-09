@@ -48,7 +48,7 @@ if not os.path.exists(os.path.join(os.path.abspath("."),'config.json')):
 {
     "lang": "ja-JP",
     "download_mode": "nm3u8dlre",
-    "codic": "aac-legacy",
+    "codic": "Dolby Atmos",
     "output_url": "./AppleMusic"
 }
 ''')

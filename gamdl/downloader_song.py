@@ -304,6 +304,7 @@ class DownloaderSong:
                 decrypted_path,
             ],
             check=True,
+            creationflags=subprocess.CREATE_NO_WINDOW,
             **self.downloader.subprocess_additional_args,
         )
 
@@ -327,6 +328,7 @@ class DownloaderSong:
                 remuxed_path,
             ],
             check=True,
+            creationflags=subprocess.CREATE_NO_WINDOW,
             **self.downloader.subprocess_additional_args,
         )
 
@@ -357,6 +359,7 @@ class DownloaderSong:
                 remuxed_path,
             ],
             check=True,
+            creationflags=subprocess.CREATE_NO_WINDOW,
             **self.downloader.subprocess_additional_args,
         )
 
