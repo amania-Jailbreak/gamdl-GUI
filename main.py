@@ -116,8 +116,7 @@ class TextBox(customtkinter.CTkFrame):
                         if not 'artist' in url:
                             continue
                         options = webdriver.ChromeOptions()
-                        if not config.get("debug"):
-                            options.add_argument('--headless')
+                        options.add_argument('--headless')
                         driver = webdriver.Chrome(options=options)
                         driver.get(url.replace('/see-all?section=top-songs','') + "/see-all?section=top-songs")
                         while True:
@@ -127,11 +126,12 @@ class TextBox(customtkinter.CTkFrame):
                             new_height = driver.execute_script("return document.getElementById('scrollable-page').scrollHeight")
                             if new_height == last_height:
                                 break
-                        elements = driver.find_elements(by=By.XPATH, value="//a[contains(@data-testid, 'track-seo-link')]")
+                        elements = driver.find_elements(by=By.XPATH, value="//a[contains(@data-testid, 'click-action')]")
                         links = ""
                         for element in elements:
                             url = element.get_attribute("href")
                             if 'song' not in url:
+                                print(f"Skipping {url} as it is not a song")
                                 continue
                             links += url + "\n"
                         driver.quit()
@@ -330,6 +330,6 @@ class App(customtkinter.CTk):
         self.button.grid(row=4, column=0, padx=10, pady=5)
 
 if __name__ == "__main__":
-    customtkinter.set_appearance_mode("dark")
+    customtkinter.set_appearance_mode("white")
     app = App()
     app.mainloop()
