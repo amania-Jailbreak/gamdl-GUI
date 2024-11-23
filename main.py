@@ -116,7 +116,8 @@ class TextBox(customtkinter.CTkFrame):
                         if not 'artist' in url:
                             continue
                         options = webdriver.ChromeOptions()
-                        options.add_argument('--headless')
+                        if not config.get("debug"):
+                            options.add_argument('--headless')
                         driver = webdriver.Chrome(options=options)
                         driver.get(url.replace('/see-all?section=top-songs','') + "/see-all?section=top-songs")
                         while True:
