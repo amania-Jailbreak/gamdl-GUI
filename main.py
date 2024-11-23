@@ -9,6 +9,7 @@ import subprocess
 from gamdl.cli import main as gamdl
 from gamdl.enums import *
 from pathlib import Path
+import platform
 def isCheckURL(url):
     try:
         response = requests.head(url, timeout=10)
@@ -131,7 +132,6 @@ class TextBox(customtkinter.CTkFrame):
                         for element in elements:
                             url = element.get_attribute("href")
                             if 'song' not in url:
-                                print(f"Skipping {url} as it is not a song")
                                 continue
                             links += url + "\n"
                         driver.quit()
@@ -200,6 +200,24 @@ class Setting(customtkinter.CTkFrame):
         
         self.textbox = TextBox(master=self,width=100)
         self.textbox.grid(row=1, column=0, padx=10, pady=5,sticky='ew')
+def binary(file):
+        os = platform.system()
+        if os == 'Windows':
+            if file == 'N_m3u8dl-RE':
+                return resource_path("binary\\windows-N_m3u8dl-RE.exe")
+            elif file == 'mp4decrypt':
+                return resource_path("binary\\windows-mp4decrypt.exe")
+            elif file == 'ffmpeg':
+                return resource_path("binary\\windows-ffmpeg.exe")
+        elif os == 'Linux':
+            sys.exit('Linux is not supported')
+        elif os == 'Darwin':
+            if file == 'N_m3u8dl-RE':
+                return resource_path("binary\\mac-N_m3u8dl-RE")
+            elif file == 'mp4decrypt':
+                return resource_path("binary\\mac-mp4decrypt")
+            elif file == 'ffmpeg':
+                return resource_path("binary\\mac-ffmpeg")
 
 class button(customtkinter.CTkFrame):
     def __init__(self, master, **kwargs):
@@ -237,6 +255,7 @@ class button(customtkinter.CTkFrame):
         elif type == 'all':
             self.master.log.music_progressbar.set(value)
             self.master.log.playlist_progressbar.set(value)
+        
             
         
     def download(self):
@@ -287,7 +306,7 @@ class button(customtkinter.CTkFrame):
             self.args['lytics'] = True
         def process():
             self.button.configure(state="disabled")
-            gamdl(urls=self.url,language=self.args['lang'], output_path=self.args['output'], codec_song=self.args['codec'], download_mode=self.args['download-mode'], overwrite=self.args.get('overwrite', False), no_synced_lyrics=self.args.get('lytics', False),nm3u8dlre_path=resource_path("binary\\N_m3u8dl-RE.exe"),mp4decrypt_path=resource_path("binary\\mp4decrypt.exe"),ffmpeg_path=resource_path("binary\\ffmpeg.exe"),window=self)
+            gamdl(urls=self.url,language=self.args['lang'], output_path=self.args['output'], codec_song=self.args['codec'], download_mode=self.args['download-mode'], overwrite=self.args.get('overwrite', False), no_synced_lyrics=self.args.get('lytics', False),nm3u8dlre_path=binary('N_m3u8dl-RE'),mp4decrypt_path=binary('mp4decrypt'),ffmpeg_path=binary('ffmpeg'),window=self)
             self.button.configure(state="normal")
         th1 = threading.Thread(target=process)
         th1.start()

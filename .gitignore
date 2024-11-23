@@ -4,3 +4,6 @@ output/
 *.json
 AppleMusic/
 *.pyc
+build/
+dist/
+*.spec
