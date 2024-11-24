@@ -212,6 +212,7 @@ def binary(file):
         elif os == 'Linux':
             sys.exit('Linux is not supported')
         elif os == 'Darwin':
+            sys.exit('Mac is not supported')
             if file == 'N_m3u8dl-RE':
                 return resource_path("binary\\mac-N_m3u8dl-RE")
             elif file == 'mp4decrypt':
